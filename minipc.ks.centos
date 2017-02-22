@@ -1,0 +1,51 @@
+# share this directory with:
+# python -m SimpleHTTPServer 8080 
+
+install
+reboot
+url --mirrorlist http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=os
+repo --name=updates-testing --mirrorlist http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=updates
+
+lang en_US.UTF-8
+keyboard us
+rootpw  password
+authconfig --enableshadow --passalgo=sha512
+selinux --enforcing
+timezone --utc America/New_York
+bootloader --location=mbr --driveorder=sda --append="crashkernel=auto"
+
+# Partition info
+clearpart --all --drives=sda
+#autopart --type=lvm
+zerombr
+# Create the required partitions for the platform (on EFI that means
+# /boot/efi). Also create a separate /boot partition.
+# https://github.com/rhinstaller/pykickstart/blob/master/docs/kickstart-docs.rst#id56
+reqpart --add-boot
+# 300G for vg_root vg partition
+part pv.000001 --size=300000
+# 300G for a 2nd partition
+part pv.000002 --size=1 --grow
+volgroup vg_root pv.000001
+logvol swap --name=lv_swap --vgname=vg_root --size=1024 --maxsize=1024
+logvol /    --name=lv_root --vgname=vg_root --size=200000 --fstype=ext4 
+
+# open up ssh
+#firewall --service=ssh
+services --disabled=NetworkManager
+
+%packages
+@core
+%end
+
+%pre
+#####!/bin/bash
+####while true; do
+####    if [ -f /continue ]; then break; fi
+####    sleep 5
+####    date
+####done
+%end
+
+%post
+%end
