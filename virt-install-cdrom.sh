@@ -74,13 +74,12 @@ cmd+=" --disk path=${IMAGEDIR}/${NAME}.img,size=$DISKSIZE"
 cmd+=" --accelerate"
 cmd+=" --location $ISO"
 cmd+=" --initrd-inject $KS"
-#cmd+=" --graphics none"
+cmd+=" --graphics none"
 cmd+=" --force"
 cmd+=" --network bridge=$BRIDGE"
 
 # Variable for kernel args.
 extras="console=ttyS0 inst.sshd ks=file://ks.conf"
-extras="inst.sshd ks=file://ks.conf"
 
 # Run the command
 echo "Running: $cmd --extra-args=$extras"
