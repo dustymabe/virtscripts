@@ -5,15 +5,12 @@ set -o errexit
 
 # A few tunable variables
 NAME='cdrom'
-#ISO='/home/dustymabe/Desktop/Fedora-20-x86_64-DVD.iso'
-#ISO='/guests/CentOS-7.0-1406-x86_64-DVD.iso'
-#ISO='/guests/rhel-server-7.0-x86_64-dvd.iso'
-ISO='/guests/images/Fedora-Server-DVD-x86_64-23_Alpha.iso'
-ISO='/guests/images/Fedora-Server-DVD-x86_64-23_TC11.iso'
-RAMSIZE='1500' # IN MB
-DISKSIZE='12'  # IN GB
+ISO='/var/b/images/Fedora-Server-dvd-x86_64-36-1.5.iso'
+#ISO='/var/b/images/rhel-server-7.7-x86_64-dvd.iso'
+RAMSIZE='4500' # IN MB
+DISKSIZE='300'  # IN GB
 VCPUS='2'      # NUM of CPUs
-IMAGEDIR='/guests/storagepools/manual/'
+IMAGEDIR='/var/b/libvirt-manual-pool/'
 BRIDGE='virbr0'
 
 # Create some temporary files
@@ -24,7 +21,7 @@ KS="${TMPDIR}/ks.conf"
 cat <<EOF > $KS
 install
 cdrom
-reboot
+#reboot
 lang en_US.UTF-8
 keyboard us
 rootpw  password
@@ -65,25 +62,34 @@ qemu-guest-agent
 
 EOF
 
+#KS="${PWD}/bug1879690.ks"
+
 # Build up the virt-install command
 cmd='virt-install'
 cmd+=" --name $NAME"
 cmd+=" --ram  $RAMSIZE"
 cmd+=" --vcpus $VCPUS"
-cmd+=" --disk path=${IMAGEDIR}/${NAME}.img,size=$DISKSIZE"
+#cmd+=" --disk path=${IMAGEDIR}/${NAME}.img,size=$DISKSIZE"
+cmd+=" --disk size=$DISKSIZE,bus=scsi"
 cmd+=" --accelerate"
 cmd+=" --location $ISO"
+#cmd+=" --cdrom $ISO"
 cmd+=" --initrd-inject $KS"
-cmd+=" --graphics none"
+#cmd+=" --graphics none"
 cmd+=" --force"
 cmd+=" --network bridge=$BRIDGE"
+#cmd+=" --noreboot"
+#cmd+=" --boot uefi"
+cmd+=" --boot menu=on,useserial=on"
 
 # Variable for kernel args.
-extras="console=ttyS0 inst.sshd ks=file://ks.conf"
+extras="console=ttyS0 inst.text inst.sshd ks=file://ks.conf"
+extras="console=ttyS0 inst.text inst.sshd ks=file://bug1879690.ks"
 
 # Run the command
 echo "Running: $cmd --extra-args=$extras"
-$cmd --extra-args="$extras"
+#$cmd --extra-args="$extras"
+$cmd
 
 # Clean up tmp dir
 rm -rf $TMPDIR/

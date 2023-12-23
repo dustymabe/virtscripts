@@ -5,113 +5,53 @@ set -o errexit
 
 # A few tunable variables
 NAME='tester'
-#DISK='/guests/images/Fedora-Cloud-Base-23-20151008.x86_64.qcow2'
-#DISK='/guests/images/Fedora-Cloud-Base-23_Beta_TC4-20150907.x86_64.qcow2'
-#DISK='/guests/images/Fedora-Cloud-Atomic-23-20151013.x86_64.qcow2'
-#DISK='/guests/images/CentOS-Atomic-Host-7.20151001-GenericCloud.qcow2'
-#DISK='/guests/images/Fedora-Cloud-Atomic-rawhide-20151013.x86_64.qcow2'
-#DISK='/guests/images/CentOS-7-x86_64-GenericCloud-1509.qcow2'
-#DISK='/guests/images/Fedora-Cloud-Atomic-20141203-21.x86_64.qcow2' # Official F21 Atomic Release
-#DISK='/guests/images/Fedora-Cloud-Base-20141203-21.x86_64.qcow2'   # Official F21 Cloud Base Release
-#DISK='/guests/images/Fedora-Cloud-Atomic-22-20150521.x86_64.qcow2' # Official F22 Atomic Release
-#DISK='/guests/images/Fedora-Cloud-Base-22-20150521.x86_64.qcow2'   # Official F22 Cloud Base Release
-#DISK='/guests/images/Fedora-Cloud-Atomic-23-20151030.x86_64.qcow2' # Official F23 Atomic Release 
-#DISK='/guests/images/Fedora-Cloud-Base-23-20151030.x86_64.qcow2'   # Official F23 Cloud Base Release
-#DISK='/guests/images/Fedora-Cloud-Atomic-23-20151201.x86_64.qcow2' # Official F23 - 2 Week Atomic 20151201
-#DISK='/guests/images/Fedora-Cloud-Atomic-23-20160308.x86_64.qcow2' # Official F23 - 2 Week Atomic 20160308
-#DISK='/guests/images/Fedora-Cloud-Base-24-1.2.x86_64.qcow2'        # Official F24 - Cloud Base Release Day Release
-#DISK='/guests/images/Fedora-Atomic-24-20160712.0.x86_64.qcow2'     # Official F24 - Atomic 24 First Release
-#DISK='/guests/images/Fedora-Atomic-24-20160809.0.x86_64.qcow2'     # Official F24 - 2 Week Atomic 20160809
-#DISK='/guests/images/Fedora-Cloud-Base-25-1.3.x86_64.qcow2'        # Official F25 - Cloud Base Release Day Release
+DISK='/var/b/images/Fedora-Cloud-Base-26_Alpha-1.4.x86_64.qcow2'
+DISK='/var/b/shared/assembler/fedora/builds/31.20200522.dev.7/x86_64/fedora-coreos-31.20200522.dev.7-qemu.x86_64.qcow2'
 
-#DISK='/guests/images/CentOS-7-x86_64-GenericCloud-1511.qcow2'      # Official C7 - 1511
-#DISK='/guests/images/rhel-guest-image-7.2-20150821.0.x86_64.qcow2' # RHEL 7.2 beta
-#DISK='/guests/images/rhel-guest-image-7.2-20160219.1.x86_64.qcow2' # RHEL 7.2-20160219.1
-
-DISK='/guests/images/Fedora-Atomic-25-20170131.0.x86_64.qcow2'
-DISK='/guests/images/cloud-init-atomic-updates-testing.img'
-DISK='/guests/images/Fedora-Cloud-Base-25-20170206.0.x86_64.qcow2'
-DISK='/guests/images/Fedora-Atomic-25-20170206.0.x86_64.qcow2'
-DISK='/guests/images/Fedora-Atomic-25-20170209.2.x86_64.qcow2'
-DISK='/guests/images/image-newer-NM-new-cloud-init.qcow2'
+if [ "$1" != "" ]; then
+    if [ -f "$1" ]; then
+        DISK="$1"
+    else
+        DISK="/var/b/images/$1"
+    fi
+fi
 
 
-ISATOMIC=0
 RAMSIZE='4096' # IN MB
-DISKSIZE='20'  # IN GB
+#RAMSIZE='8096' # IN MB
+DISKSIZE='40'  # IN GB
 VCPUS='2'      # NUM of CPUs
 BRIDGE='virbr0'
-TMPISO="/guests/storagepools/manual/user-data-iso.iso${RANDOM}"
-TMPDISK="/guests/storagepools/manual/$(basename ${DISK})${RANDOM}"
+TMPISO="/var/b/libvirt-manual-pool/user-data-iso.iso${RANDOM}"
 
-USERDATA='
+CLOUD_INIT_USERDATA='
 #cloud-config
 password: passw0rd
 chpasswd: { expire: False }
 ssh_pwauth: True
-
-### Section to install qemu-guest-agent and start the service
-#   packages:
-#     - qemu-guest-agent
-#   runcmd:
-#     - [ systemctl, start, --no-block, qemu-guest-agent.service ]
-
-### Section to set up storage for docker
-bootcmd:
-# For devicemapper  
-#- echo 'DEVS=/dev/sdb' >>  /etc/sysconfig/docker-storage-setup
-#- echo 'VG=vgdocker' >>  /etc/sysconfig/docker-storage-setup
-# For overlay
-- echo 'ROOT_SIZE=9G' >>  /etc/sysconfig/docker-storage-setup
-- echo 'STORAGE_DRIVER=overlay2' >>  /etc/sysconfig/docker-storage-setup
-#
-#- echo 'DATA_SIZE=100%FREE' >>  /etc/sysconfig/docker-storage-setup
-
-
-#disable_root: False
-
-### Section to create an "atomic" user with ssh key
-#   users:
-#     - default
-#     - name: atomic
-#       gecos: Atomic User
-#       sudo: ["ALL=(ALL) NOPASSWD:ALL"]
-#       groups: [wheel, adm, systemd-journal]
-#       ssh-authorized-keys:
-#           - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOLFvRYlf2UTC7lZjWO70hKGqtq6Bu+DruqJsXHE/E+v9ziTWebuEcSOZmGNRTNm7CqDoqTJgH5uPrqHfokA+kmMojefqJ9Ha9KY5l8ea9Hk88S9P4ryAW01zFkRY55xBwyIzKL9wReEFvCYTTIHOiRZbDq8PstrPwh8sXBOJhdHzLvjbuDAz7fdgH7/JBsf/FPKJ61aQkjs2a9Xfx5yC9J8wbbvLHU9myxfKPgxMLbWEnAEbFJfUGY849ZO4AiFZHYnQgQaMS1WFpEXBsA8VsFI6pzGAxCs0+7Eyy5fvUTznXdaTpr+vmMxCBllm3M3qGDVZCH04oiEKKUC+2BVQr
-
-#growpart:
-#  mode: off
-'
-if [ "$ISATOMIC" == "1" ]; then
-    USERDATA+="
+ssh_authorized_keys:
+ - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOLFvRYlf2UTC7lZjWO70hKGqtq6Bu+DruqJsXHE/E+v9ziTWebuEcSOZmGNRTNm7CqDoqTJgH5uPrqHfokA+kmMojefqJ9Ha9KY5l8ea9Hk88S9P4ryAW01zFkRY55xBwyIzKL9wReEFvCYTTIHOiRZbDq8PstrPwh8sXBOJhdHzLvjbuDAz7fdgH7/JBsf/FPKJ61aQkjs2a9Xfx5yC9J8wbbvLHU9myxfKPgxMLbWEnAEbFJfUGY849ZO4AiFZHYnQgQaMS1WFpEXBsA8VsFI6pzGAxCs0+7Eyy5fvUTznXdaTpr+vmMxCBllm3M3qGDVZCH04oiEKKUC+2BVQr
 write_files:
--   owner: root:root
-    path: /etc/systemd/system/cockpitws.service
-    permissions: '0644'
-    content: |
-[Unit]
-Description=Cockpit Web Interface
-Requires=docker.service
-After=docker.service
-[Service]
-Restart=on-failure
-RestartSec=10
-ExecStart=/usr/bin/docker run --rm --privileged --pid host -v /:/host --name %p fedora/cockpitws /container/atomic-run --local-ssh
-ExecStop=-/usr/bin/docker stop -t 2 %p
-[Install]
-WantedBy=multi-user.target
+ - encoding: b64
+   content: CiMgVGhpcyBmaWxlIGNvbnRyb2xzIHRoZSBzdGF0ZSBvZiBTRUxpbnV4...
+   owner: root:root
+   path: /etc/sysconfig/foolinux
+   permissions: '0644'
+ - content: |
+       # My new /etc/sysconfig/samba file
+       SMBDOPTIONS="-D"
+   path: /etc/sysconfig/samba
+'
 
-runcmd:
-- echo 'nameserver 192.168.1.1' > /etc/resolv.conf
-- [ systemctl, daemon-reload ]
-- [ systemctl, enable, cockpitws.service ]
-- [ systemctl, start, --no-block, cockpitws.service ]
-#- [ systemctl, start, docker-storage-setup.service ]
-#- [ systemctl, start, docker.service ]
+####USERDATA='#cloud-config
+####ssh-authorized-keys:
+#### - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOLFvRYlf2UTC7lZjWO70hKGqtq6Bu+DruqJsXHE/E+v9ziTWebuEcSOZmGNRTNm7CqDoqTJgH5uPrqHfokA+kmMojefqJ9Ha9KY5l8ea9Hk88S9P4ryAW01zFkRY55xBwyIzKL9wReEFvCYTTIHOiRZbDq8PstrPwh8sXBOJhdHzLvjbuDAz7fdgH7/JBsf/FPKJ61aQkjs2a9Xfx5yC9J8wbbvLHU9myxfKPgxMLbWEnAEbFJfUGY849ZO4AiFZHYnQgQaMS1WFpEXBsA8VsFI6pzGAxCs0+7Eyy5fvUTznXdaTpr+vmMxCBllm3M3qGDVZCH04oiEKKUC+2BVQr
+####users:
+####- name: "core"
+####  passwd: "$6$ignUj098OpeP4zsr$E.F3GSa9mZaUIGkEKSAg5rS02YhOhdZBzjFRHDRcobWTEOjOdsIcwelrNwBtJvpz0n2EeIl.HIqdp.UNkkKmS."
+####'
 
-"
-fi
+
 METADATA='
 instance-id: id-mylocal0001
 local-hostname: cloudhost
@@ -152,39 +92,177 @@ NETWORKDATA='
 ]
 }
 '
+NETWORKDATA="
+version: 1
+config:
+    - type: physical
+      name: eth1
+      mac_address: '00:16:3e:77:e2:e4'
+      subnets:
+      - type: static
+        address: '192.168.123.129'
+        netmask: '255.255.255.0'
+        gateway: '192.168.123.1'
+    - type: nameserver
+      address:
+      - '8.8.8.8'
+      search:
+      - 'mydomain.test'
+"
+
+IGNITION_USERDATA='
+{
+  "ignition": { "version": "3.0.0" },
+  "systemd": {
+    "units": [{
+      "name": "example.service",
+      "enabled": true,
+      "contents": "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"
+    }]
+  },
+  "passwd": {
+    "users": [
+      {
+        "name": "core",
+        "sshAuthorizedKeys": [
+          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOLFvRYlf2UTC7lZjWO70hKGqtq6Bu+DruqJsXHE/E+v9ziTWebuEcSOZmGNRTNm7CqDoqTJgH5uPrqHfokA+kmMojefqJ9Ha9KY5l8ea9Hk88S9P4ryAW01zFkRY55xBwyIzKL9wReEFvCYTTIHOiRZbDq8PstrPwh8sXBOJhdHzLvjbuDAz7fdgH7/JBsf/FPKJ61aQkjs2a9Xfx5yC9J8wbbvLHU9myxfKPgxMLbWEnAEbFJfUGY849ZO4AiFZHYnQgQaMS1WFpEXBsA8VsFI6pzGAxCs0+7Eyy5fvUTznXdaTpr+vmMxCBllm3M3qGDVZCH04oiEKKUC+2BVQr"
+        ]
+      }
+    ]
+  }
+}
+'
+
+USERDATA="${CLOUD_INIT_USERDATA}"
+#USERDATA="${IGNITION_USERDATA}"
 
 
-echo "Creating user data iso $TMPISO"
-pushd $(mktemp -d)
-mkdir -p openstack/latest/
-echo "$NETWORKDATA" > openstack/latest/network_data.json
-echo "$USERDATA" > user-data
-echo "$METADATA" > meta-data
-genisoimage -output $TMPISO -volid cidata -joliet -rock user-data meta-data openstack/latest/network_data.json
-popd
+USERDATAFILE=$(mktemp)
+echo "$USERDATA" > $USERDATAFILE
 
-echo "Creating snapshot disk $TMPDISK"
-qemu-img create -f qcow2 -b $DISK $TMPDISK ${DISKSIZE}g
-echo "Will use backing disk $DISK"
-echo "Will use snapshot disk $TMPDISK"
+#   echo "Creating user data iso $TMPISO"
+#   pushd $(mktemp -d)
+#   #mkdir -p openstack/latest/
+#   #echo "$NETWORKDATA" > openstack/latest/network_data.json
+#   echo "$NETWORKDATA" > network-config
+#   echo "$USERDATA" > user-data
+#   echo "$METADATA" > meta-data
+#   #genisoimage -output $TMPISO -volid cidata -joliet -rock user-data meta-data openstack/latest/network_data.json
+#   genisoimage -output $TMPISO -volid cidata -joliet -rock user-data meta-data network-config
+#   popd
+
+# Create new file to be used for ignition. This gets us around selinux
+# issues and also allows us to have the file be automatically deleted
+# when our process exits.
+#
+# NONE OF THIS WORKS
+#   IGNITION_CONFIG_FILE=$(mktemp)
+#   echo "$USERDATA" > $IGNITION_CONFIG_FILE
+#   exec 3<>"${IGNITION_CONFIG_FILE}"
+#   rm -f "${IGNITION_CONFIG_FILE}"
+#   IGNITION_CONFIG_FILE=/proc/self/fd/3
+
+#echo "Creating snapshot disk $TMPDISK"
+#qemu-img create -f qcow2 -b $DISK $TMPDISK ${DISKSIZE}g
+#echo "Will use backing disk $DISK"
+#echo "Will use snapshot disk $TMPDISK"
 
 # Build up the virt-install command
 cmd='virt-install --import'
 cmd+=" --name $NAME"
-cmd+=" --cpu  host-passthrough" # for nested virt
+cmd+=" --filesystem=/var/b/shared/,var-b-shared,driver.type=virtiofs --memorybacking=source.type=memfd,access.mode=shared"
+cmd+=" --cpu  host-passthrough" # for nested virt (x86_64 only)
+#cmd+=" --arch aarch64"
 cmd+=" --ram  $RAMSIZE"
 cmd+=" --vcpus $VCPUS"
-#cmd+=" --disk path=$TMPDISK,size=10,backing_store=${DISK}"
-cmd+=" --disk path=$TMPDISK"
-cmd+=" --disk path=${TMPDISK}.2,size=10" # A 2nd disk for whatever
-#cmd+=" --disk path=$DISK"
-cmd+=" --disk path=$TMPISO"
+cmd+=" --disk backing_store=${DISK},size=${DISKSIZE},bus=scsi,discard=unmap"
+cmd+=" --disk size=10,bus=scsi,discard=unmap" # A 2nd disk for whatever
+#cmd+=" --disk size=10,bus=scsi,discard=unmap" # A 2nd disk for whatever
+#cmd+=" --disk path=$TMPISO"
 cmd+=" --accelerate"
-cmd+=" --graphics none"
-cmd+=" --force"
+#cmd+=" --graphics none"
+cmd+=" --autoconsole text"
 cmd+=" --network bridge=$BRIDGE,model=virtio"
+#cmd+=" --network bridge=$BRIDGE,model=virtio"
+#cmd+=" --network bridge=virbr1,model=virtio,mac=00:16:3e:77:e2:e4"
+#cmd+=" --network network=default,model=virtio"
 cmd+=" --channel unix,mode=bind,target_type=virtio,name='org.qemu.guest_agent.0'"
+cmd+=" --controller=scsi,model=virtio-scsi"
+cmd+=" --os-variant=fedora-unknown"
+#cmd+=" --tpm backend.type=emulator,backend.version=2.0,model=tpm-tis"
+
+# for ignition
+#cmd+=' --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/guests/sharedfolder/code/github.com/dustymabe/virtscripts/user-systemd.ign"'
+
+#USERDATAFILE=$(mktemp)
+#echo "$USERDATA" > $USERDATAFILE
+#cmd+=" --cloud-init=user-data=$USERDATAFILE"
+
+#cmd+=" --cloud-init=ssh-key=/var/annex/sync/ssh_keys/HOME/home21_ecdsa.pub"
+
+#cmd+=" --boot uefi"
+cmd+=" --boot menu=on,useserial=on"
+#cmd+=" --boot menu=on"
 
 # Run the command
 echo "Running: $cmd"
-$cmd
+set -x
+
+$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/grub-passwd.ign"
+#$cmd
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/tmp/kvc/config.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/tmp/config.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/github.com/ashcrow/filetranspiler/links.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/github.com/dustymabe/virtscripts/user-systemd.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/github.com/dustymabe/virtscripts/mounts.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/github.com/dustymabe/virtscripts/example.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct-auto-login-ttyS0.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_rollout_wariness.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_download_file.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/ignition-with-auto-login.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/entitlements.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/gitlab.com/dustymabe/weechat/weechat.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/assembler/teaming.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/assembler/simple.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/assembler/demo/teaming.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/assembler/awsfcos.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/config.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/gitlab.com/dustymabe/pc-ansible-config/provisioning/pibackup/pibackup.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/luks.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/rpm-layering.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/boot-mirror.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/path-unit-issue.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/kargs.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/enable-oomd.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/pi.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/rhcos.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_more_users.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/issue-512.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_silence_audit.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_append_etc_issue.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_zram_generator.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_enable_dnsmasq.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct-var-log.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/ignition-issue-1041.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_enable_linger_core.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcct_iptables_nft.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/ask-fedora-13126.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/pagure.io/releng/archive-repo-manager/bug.ign.json"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/shared/code/gitlab.com/dustymabe/notes/code/github.com/dustymabe/dustymabe.com/notes/dustymabecom.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/fcos_verbose_network_manager.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/podman-docker-socket.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/var-mirror.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/auto-login-serial-console-ttyS0.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/user-timers.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/users.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/root-ssh-login.ign"
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/swaponzram.ign"
+
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=/var/b/images/tutorials.ign"
+
+# Doesn't work
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,string='$(cat /var/b/shared/assembler/teaming.ign)'"
+
+#ignitionfile=$(mktemp)
+#echo "$USERDATA" > $ignitionfile 
+#$cmd --qemu-commandline="-fw_cfg name=opt/com.coreos/config,file=${ignitionfile}"
